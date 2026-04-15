@@ -7,9 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:sijentik/models/report_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sijentik/api/api.dart';
 
 class AddReportPage extends StatefulWidget {
-  const AddReportPage({super.key});
+  const AddReportPage({super.key, required userId});
 
   @override
   State<AddReportPage> createState() => _AddReportPageState();
@@ -28,8 +30,6 @@ class _AddReportPageState extends State<AddReportPage> {
   bool isLoading = false;
 
   final ImagePicker picker = ImagePicker();
-
-  static const String baseUrl = 'http://192.168.1.6:8000/api';
 
   Future<void> simpanLaporan() async {
     if (judulController.text.trim().isEmpty) {
@@ -52,12 +52,25 @@ class _AddReportPageState extends State<AddReportPage> {
     });
 
     try {
+      // 🔥 AMBIL TOKEN
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final userId = prefs.getInt('id'); // 🔥
+
       final request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/laporan'),
       );
 
       request.headers['Accept'] = 'application/json';
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // 🔥 TAMBAH INI
+      request.fields['user_id'] = userId.toString();
+
       request.fields['judul'] = judulController.text.trim();
       request.fields['ada_jentik'] = adaJentik! ? '1' : '0';
       request.fields['tanggal'] = DateFormat(
@@ -76,7 +89,6 @@ class _AddReportPageState extends State<AddReportPage> {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      // PERBAIKAN: data sebagai variable non-final
       Map<String, dynamic>? data;
       if (response.body.isNotEmpty) {
         data = jsonDecode(response.body);

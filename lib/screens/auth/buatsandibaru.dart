@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sijentik/api/api.dart';
 
 class BuatKataSandiBaruPage extends StatefulWidget {
   final String email;
@@ -21,11 +22,6 @@ class _BuatKataSandiBaruPageState extends State<BuatKataSandiBaruPage> {
 
   bool obscurePassword = true;
   bool obscureConfirmPassword = true;
-
-  // Android Emulator: 10.0.2.2
-  // HP Fisik: ganti dengan IP laptop, misalnya 192.168.1.8
-  static const String resetPasswordUrl =
-      'http://192.168.1.6:8000/api/reset-password';
 
   @override
   void dispose() {
@@ -70,10 +66,7 @@ class _BuatKataSandiBaruPageState extends State<BuatKataSandiBaruPage> {
                 ),
               ),
               const SizedBox(height: 30),
-              Image.asset(
-                'assets/images/sandidua.png',
-                width: 150,
-              ),
+              Image.asset('assets/images/sandidua.png', width: 150),
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
@@ -198,8 +191,7 @@ class _BuatKataSandiBaruPageState extends State<BuatKataSandiBaruPage> {
                           ),
                           onPressed: () {
                             setState(() {
-                              obscureConfirmPassword =
-                                  !obscureConfirmPassword;
+                              obscureConfirmPassword = !obscureConfirmPassword;
                             });
                           },
                         ),
@@ -304,17 +296,14 @@ class _BuatKataSandiBaruPageState extends State<BuatKataSandiBaruPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(resetPasswordUrl),
-        headers: {
-          'Accept': 'application/json',
-        },
+        Uri.parse('$baseUrl/reset-password'), // 🔥 pakai baseUrl global
+        headers: {'Accept': 'application/json'},
         body: {
           'email': widget.email,
           'password': passwordController.text.trim(),
           'password_confirmation': confirmPasswordController.text.trim(),
         },
       );
-
       final dynamic data = jsonDecode(response.body);
 
       if (!mounted) return;

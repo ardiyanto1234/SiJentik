@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'buatsandibaru.dart';
+import 'package:sijentik/api/api.dart';
 
 class LupaKataSandiOtpPage extends StatefulWidget {
   final String email;
@@ -24,10 +25,8 @@ class _LupaKataSandiOtpPageState extends State<LupaKataSandiOtpPage> {
     (index) => FocusNode(),
   );
 
-  // Android Emulator: 10.0.2.2
-  // HP Fisik: ganti dengan IP laptop, misalnya 192.168.1.8
-  static const String verifyOtpUrl = 'http://192.168.1.6:8000/api/verify-otp';
-  static const String requestOtpUrl = 'http://192.168.1.6:8000/api/RequestOtp';
+  String get verifyOtpUrl => '$baseUrl/verify-otp';
+  String get requestOtpUrl => '$baseUrl/RequestOtp';
 
   @override
   void initState() {

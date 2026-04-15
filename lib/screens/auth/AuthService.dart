@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:sijentik/api/api.dart';
 
 class RegisterResult {
   final bool success;
@@ -14,9 +15,6 @@ class RegisterResult {
 }
 
 class AuthService {
-  // Android Emulator => 10.0.2.2
-  // HP fisik => ganti dengan IP laptop/PC, misalnya 192.168.1.10
-  static const String baseUrl = 'http://192.168.1.6:8000';
 
   Future<RegisterResult> registerKader({
     required String name,

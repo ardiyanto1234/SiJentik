@@ -6,6 +6,7 @@ import 'package:sijentik/component/app_theme.dart';
 import 'package:sijentik/screens/auth/registerkader.dart';
 import 'package:sijentik/screens/auth/lupasandiemail.dart';
 import 'package:sijentik/screens/kader/homekader.dart';
+import 'package:sijentik/api/api.dart';
 import 'package:sijentik/screens/petugas/dashboardpetugas.dart';
 
 class LoginPage extends StatefulWidget {
@@ -25,8 +26,6 @@ class _LoginPageState extends State<LoginPage> {
   bool obscurePassword = true;
   bool isLoading = false;
 
-  static const String baseUrl = 'http://192.168.1.6:8000/api/login';
-
   @override
   void dispose() {
     emailController.dispose();
@@ -39,10 +38,10 @@ class _LoginPageState extends State<LoginPage> {
   // =============================
   // SIMPAN DATA USER
   // =============================
-  Future<void> saveUserData(Map user) async {
+  Future<void> saveUserData(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setInt('id', user['id']);
+    await prefs.setInt('id', int.tryParse(user['id'].toString()) ?? 0);
     await prefs.setString('name', user['name'] ?? '');
     await prefs.setString('email', user['email'] ?? '');
     await prefs.setString('address', user['address'] ?? '');
@@ -51,6 +50,9 @@ class _LoginPageState extends State<LoginPage> {
     await prefs.setString('status', user['status'] ?? '');
   }
 
+  // =============================
+  // LOGIN
+  // =============================
   Future<void> _login() async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       _showErrorDialog('Email dan kata sandi harus diisi');
@@ -68,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(baseUrl),
+        Uri.parse('$baseUrl/login'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -79,6 +81,9 @@ class _LoginPageState extends State<LoginPage> {
         }),
       );
 
+      print("STATUS LOGIN: ${response.statusCode}");
+      print("BODY LOGIN: ${response.body}");
+
       final data = jsonDecode(response.body);
 
       if (!mounted) return;
@@ -88,9 +93,18 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       if (response.statusCode == 200) {
-        final user = data['user'];
+        final user = Map<String, dynamic>.from(data['user'] ?? {});
 
-        // simpan data user dari backend
+        // 🔥 VALIDASI WAJIB
+        if (user['id'] == null) {
+          _showErrorDialog('ID user tidak ditemukan dari server');
+          return;
+        }
+
+        print("LOGIN SUCCESS");
+        print("USER FINAL: $user");
+
+        // SIMPAN
         await saveUserData(user);
 
         final String role = (user['role'] ?? '').toString().toLowerCase();
@@ -98,7 +112,13 @@ class _LoginPageState extends State<LoginPage> {
         if (role == 'petugas') {
           _navigateToDashboardPetugas();
         } else if (role == 'kader') {
-          _navigateToHomeKader(user);
+          _navigateToHomeKader({
+            'id': user['id'],
+            'name': user['name'],
+            'email': user['email'],
+            'address': user['address'],
+            'role': user['role'],
+          });
         } else {
           _showErrorDialog('Role pengguna tidak dikenali');
         }
@@ -116,6 +136,9 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  // =============================
+  // ERROR DIALOG
+  // =============================
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -197,7 +220,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 30),
 
-                          // EMAIL
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
@@ -225,7 +247,6 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 20),
 
-                          // PASSWORD
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
@@ -264,7 +285,23 @@ class _LoginPageState extends State<LoginPage> {
                             onSubmitted: (_) => _login(),
                           ),
 
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 10),
+
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: _navigateLupaKataSandi,
+                                child: const Text(
+                                  'Lupa Kata Sandi?',
+                                  style: TextStyle(
+                                    color: Color(0xFF1E88E5),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
 
                           SizedBox(
                             width: double.infinity,
@@ -283,24 +320,24 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
                             ),
                           ),
-
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 15),
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              const Text(
                                 'Belum punya akun? ',
-                                style: TextStyle(color: Colors.grey[700]),
+                                style: TextStyle(color: Colors.black87),
                               ),
-                              TextButton(
-                                onPressed: _navigateToRegister,
+                              GestureDetector(
+                                onTap: _navigateToRegister,
                                 child: const Text(
-                                  'Daftar disini',
+                                  'Daftar',
                                   style: TextStyle(
                                     color: Color(0xFF1E88E5),
                                     fontWeight: FontWeight.bold,
@@ -313,7 +350,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -324,7 +360,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _navigateToHomeKader(Map<String, dynamic> user) {
-    FocusScope.of(context).unfocus();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => HomeKaderPage(user: user)),
@@ -333,7 +368,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _navigateToDashboardPetugas() {
-    FocusScope.of(context).unfocus();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const DashboardPetugas()),
@@ -345,6 +379,13 @@ class _LoginPageState extends State<LoginPage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RegisterKaderPage()),
+    );
+  }
+
+  void _navigateLupaKataSandi() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LupaKataSandiEmailPage()),
     );
   }
 }

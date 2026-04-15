@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sijentik/api/api.dart';
 
 class RegisterResult {
   final bool success;
@@ -10,7 +11,6 @@ class RegisterResult {
 }
 
 class RegisterKaderController extends ChangeNotifier {
-
   final formKey = GlobalKey<FormState>();
 
   final namaController = TextEditingController();
@@ -23,9 +23,6 @@ class RegisterKaderController extends ChangeNotifier {
   bool obscurePassword = true;
   bool obscureKonfirmasiPassword = true;
   bool isLoading = false;
-
-  /// GANTI DENGAN URL API LARAVEL ANDA
-  final String baseUrl = "http://192.168.1.6:8000/api/register";
 
   void togglePassword() {
     obscurePassword = !obscurePassword;
@@ -85,24 +82,17 @@ class RegisterKaderController extends ChangeNotifier {
   }
 
   Future<RegisterResult> register() async {
-
     if (!formKey.currentState!.validate()) {
-      return RegisterResult(
-        success: false,
-        message: "Form belum lengkap",
-      );
+      return RegisterResult(success: false, message: "Form belum lengkap");
     }
 
     isLoading = true;
     notifyListeners();
 
     try {
-
       final response = await http.post(
-        Uri.parse(baseUrl),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        Uri.parse('$baseUrl/register'), // 🔥 pakai baseUrl global
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "name": namaController.text,
           "email": emailController.text,
@@ -112,34 +102,24 @@ class RegisterKaderController extends ChangeNotifier {
           "password_confirmation": konfirmasiPasswordController.text,
         }),
       );
-
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201) {
-
         return RegisterResult(
           success: true,
           message: data["message"] ?? "Register berhasil",
         );
-
       } else {
-
         return RegisterResult(
           success: false,
-          message: data["message"] ??
-              data["error"] ??
-              "Register gagal",
+          message: data["message"] ?? data["error"] ?? "Register gagal",
         );
-
       }
-
     } catch (e) {
-
       return RegisterResult(
         success: false,
         message: "Tidak dapat terhubung ke server",
       );
-
     } finally {
       isLoading = false;
       notifyListeners();

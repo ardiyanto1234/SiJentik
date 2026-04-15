@@ -19,9 +19,9 @@ class HomeKaderPage extends StatefulWidget {
 
 class _HomeKaderPageState extends State<HomeKaderPage> {
   int _selectedIndex = 0;
-  
+
   // Data dummy kader
- 
+
   // Pages untuk bottom navigation
   late final List<Widget> _pages = [
     const DashboardPage(user: {}),
@@ -34,7 +34,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
-      
+
       // APPBAR
       appBar: AppBar(
         backgroundColor: AppColors.button,
@@ -61,10 +61,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
                 ),
                 Text(
                   'Kader: ${widget.user['name']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
                 ),
               ],
             ),
@@ -95,26 +92,27 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
           const SizedBox(width: 8),
         ],
       ),
-      
+
       // BODY
       body: _pages[_selectedIndex],
-      
+
       // FLOATING ACTION BUTTON (hanya di halaman Laporan)
-      floatingActionButton: _selectedIndex == 1 
+      floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
               backgroundColor: const Color(0xFF206E97),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AddReportPage(),
+                    builder: (context) =>
+                        AddReportPage(userId: widget.user['id']),
                   ),
                 );
               },
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
-      
+
       // BOTTOM NAVIGATION BAR
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
@@ -154,7 +152,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
       ),
     );
   }
-  
+
   void _showNotifications() {
     showDialog(
       context: context,
@@ -191,7 +189,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
       },
     );
   }
-  
+
   Widget _buildNotificationItem({
     required String title,
     required String message,
@@ -217,10 +215,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(message),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
       trailing: !isRead
@@ -235,7 +230,7 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
           : null,
     );
   }
-  
+
   void _confirmLogout() {
     showDialog(
       context: context,
@@ -252,15 +247,12 @@ class _HomeKaderPageState extends State<HomeKaderPage> {
               onPressed: () {
                 Navigator.pop(context); // Tutup dialog
                 Navigator.pushNamedAndRemoveUntil(
-                  context, 
-                  '/login', 
-                  (route) => false
+                  context,
+                  '/login',
+                  (route) => false,
                 );
               },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
           ],
         );

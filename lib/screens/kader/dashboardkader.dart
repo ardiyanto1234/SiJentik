@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:sijentik/api/api.dart';
 import 'package:sijentik/component/app_theme.dart';
 import 'history_page.dart';
 import 'add_report.dart';
@@ -17,13 +20,19 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-
   String address = '';
+
+  Map<String, dynamic>? dashboardData;
+
+  // 🔥 TAMBAHKAN INI
+  List<dynamic> recentReports = [];
 
   @override
   void initState() {
     super.initState();
     loadUserData();
+    fetchDashboard();
+    fetchRecentReports();
   }
 
   Future<void> loadUserData() async {
@@ -34,58 +43,77 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  // Data statistik dummy
-  final Map<String, dynamic> stats = const {
-    'totalReports': 24,
-    'approved': 18,
-    'pending': 4,
-    'rejected': 2,
-    'percentage': 75,
-  };
+  Future<void> fetchDashboard() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('id');
 
-  // Data laporan terbaru dummy
-  final List<Map<String, dynamic>> recentReports = const [
-    {
-      'id': 'LP001',
-      'address': 'Jl. Merdeka No. 12',
-      'date': '12 Mar 2024',
-      'status': 'Disetujui',
-      'statusColor': Colors.green,
-    },
-    {
-      'id': 'LP002',
-      'address': 'Jl. Sudirman No. 45',
-      'date': '11 Mar 2024',
-      'status': 'Menunggu',
-      'statusColor': Colors.orange,
-    },
-    {
-      'id': 'LP003',
-      'address': 'Jl. Gatot Subroto No. 8',
-      'date': '10 Mar 2024',
-      'status': 'Disetujui',
-      'statusColor': Colors.green,
-    },
-  ];
+    print("ID DARI STORAGE: $userId");
+
+    if (userId == null) {
+      print("ID NULL DARI STORAGE ❌");
+      return;
+    }
+
+    final response = await http.get(
+      Uri.parse('http://192.168.1.6:8000/api/dashboard/$userId'),
+    );
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      setState(() {
+        dashboardData = data;
+      });
+    }
+  }
+
+  Future<void> fetchRecentReports() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('id');
+
+    if (userId == null) return;
+
+    final response = await http.get(Uri.parse('$baseUrl/laporan/user/$userId'));
+
+    print("RECENT STATUS: ${response.statusCode}");
+    print("RECENT BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      setState(() {
+        recentReports = data;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final stats = dashboardData?['stats'];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ===== HEADER SELAMAT DATANG =====
+          // ===== HEADER (GRADIENT) =====
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF206E97),
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF206E97), Color(0xFF4BA3C3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withOpacity(0.2),
                   blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -96,8 +124,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Selamat Datang,',
-                        style: TextStyle(fontSize: 16, color: Colors.white70),
+                        'Selamat Datang 👋',
+                        style: TextStyle(fontSize: 14, color: Colors.white70),
                       ),
                       const SizedBox(height: 5),
                       Text(
@@ -108,38 +136,22 @@ class _DashboardPageState extends State<DashboardPage> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
-                     'Wilayah: ${widget.user['address']}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
+                        'Wilayah: ${dashboardData?['user']['wilayah'] ?? '-'}',
+                        style: const TextStyle(color: Colors.white),
                       ),
-                      const SizedBox(height: 5),
                       Text(
-                        'Total Laporan: ${stats['totalReports']}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
+                        'Total Laporan: ${stats?['total_laporan'] ?? 0}',
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 20),
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.medical_services_outlined,
-                    size: 40,
-                    color: Colors.white,
-                  ),
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white24,
+                  child: Icon(Icons.person, color: Colors.white, size: 30),
                 ),
               ],
             ),
@@ -147,14 +159,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           const SizedBox(height: 25),
 
-          // ===== STATISTIK CARD =====
+          // ===== STATISTIK =====
           const Text(
-            'Statistik Laporan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+            "Statistik Laporan",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
 
@@ -162,32 +170,32 @@ class _DashboardPageState extends State<DashboardPage> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 15,
-            mainAxisSpacing: 15,
-            childAspectRatio: 1.2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.3,
             children: [
               _buildStatCard(
-                title: 'Total Laporan',
-                value: '${stats['totalReports']}',
-                icon: Icons.assignment_outlined,
-                color: const Color(0xFF206E97),
+                title: 'Total',
+                value: '${stats?['total_laporan'] ?? 0}',
+                icon: Icons.assignment,
+                color: Colors.blue,
               ),
               _buildStatCard(
                 title: 'Disetujui',
-                value: '${stats['approved']}',
-                icon: Icons.check_circle_outline,
+                value: '${stats?['disetujui'] ?? 0}',
+                icon: Icons.check_circle,
                 color: Colors.green,
               ),
               _buildStatCard(
                 title: 'Menunggu',
-                value: '${stats['pending']}',
-                icon: Icons.access_time_outlined,
+                value: '${stats?['menunggu'] ?? 0}',
+                icon: Icons.schedule,
                 color: Colors.orange,
               ),
               _buildStatCard(
                 title: 'Ditolak',
-                value: '${stats['rejected']}',
-                icon: Icons.cancel_outlined,
+                value: '${stats?['ditolak'] ?? 0}',
+                icon: Icons.cancel,
                 color: Colors.red,
               ),
             ],
@@ -195,15 +203,15 @@ class _DashboardPageState extends State<DashboardPage> {
 
           const SizedBox(height: 25),
 
-          // ===== PERSENTASE DISETUJUI =====
+          // ===== PROGRESS =====
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(0.08),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -218,149 +226,100 @@ class _DashboardPageState extends State<DashboardPage> {
                       width: 80,
                       height: 80,
                       child: CircularProgressIndicator(
-                        value: stats['percentage'] / 100,
+                        value: (stats?['persentase_disetujui'] ?? 0) / 100,
                         strokeWidth: 8,
                         backgroundColor: Colors.grey[200],
-                        valueColor: const AlwaysStoppedAnimation<Color>(
+                        valueColor: const AlwaysStoppedAnimation(
                           Color(0xFF206E97),
                         ),
                       ),
                     ),
                     Text(
-                      '${stats['percentage']}%',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      '${stats?['persentase_disetujui'] ?? 0}%',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(width: 20),
                 const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Persentase Disetujui',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        '75% laporan Anda telah disetujui petugas. Pertahankan!',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                    ],
+                  child: Text(
+                    "Persentase laporan yang telah disetujui",
+                    style: TextStyle(fontSize: 14),
                   ),
                 ),
               ],
             ),
           ),
 
-          const SizedBox(height: 25),
-
-          // ===== LAPORAN TERBARU =====
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Laporan Terbaru',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  // Navigasi ke halaman riwayat
-                  // Navigator.push(context, MaterialPageRoute(builder: (context) => HistoryPage()));
-                },
-                child: const Text(
-                  'Lihat Semua',
-                  style: TextStyle(color: Color(0xFF206E97)),
-                ),
-              ),
-            ],
-          ),
-
           const SizedBox(height: 10),
 
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: recentReports.map((report) {
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF206E97).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.home_outlined,
-                          color: Color(0xFF206E97),
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        report['address'],
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      subtitle: Text(
-                        'ID: ${report['id']} • ${report['date']}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: report['statusColor'].withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          report['status'],
-                          style: TextStyle(
-                            color: report['statusColor'],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      onTap: () {
-                        // Navigasi ke detail laporan
-                      },
+          recentReports.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      "Belum ada laporan",
+                      style: TextStyle(color: Colors.grey),
                     ),
-                    if (report != recentReports.last)
-                      const Divider(height: 1, indent: 16, endIndent: 16),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
+                  ),
+                )
+              : Column(
+                  children: recentReports.map((report) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.home, color: Colors.blue),
 
-          const SizedBox(height: 25),
+                        // 🔥 FIX FIELD DARI API
+                        title: Text(report['judul'] ?? '-'),
+                        subtitle: Text(report['alamat'] ?? '-'),
 
-          const SizedBox(height: 40),
+                        trailing: _buildStatusBadge(report['status']),
+                      ),
+                    );
+                  }).toList(),
+                ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String? status) {
+    Color color;
+
+    switch (status) {
+      case 'diterima':
+        color = Colors.green;
+        break;
+      case 'proses':
+        color = Colors.orange;
+        break;
+      case 'ditolak':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status ?? '-',
+        style: TextStyle(color: color, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -372,106 +331,25 @@ class _DashboardPageState extends State<DashboardPage> {
     required Color color,
   }) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
         ],
       ),
-      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          Icon(icon, color: color, size: 26),
+          const Spacer(),
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
+            value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
+          Text(title, style: const TextStyle(color: Colors.grey)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'add_report.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReportsPage extends StatelessWidget {
   const ReportsPage({super.key});
+
+  Future<int> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('id') ?? 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +34,7 @@ class ReportsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-          
+
           // Card Panduan
           Container(
             padding: const EdgeInsets.all(20),
@@ -73,19 +79,25 @@ class ReportsPage extends StatelessWidget {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 30),
-          
+
           // Tombol Mulai
           SizedBox(
             width: double.infinity,
             height: 50,
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                int userId = await getUserId();
+
+                print("USER ID: $userId"); // debug
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AddReportPage(),
+                    builder: (context) => AddReportPage(
+                      userId: userId, // ✅ FIX DI SINI
+                    ),
                   ),
                 );
               },

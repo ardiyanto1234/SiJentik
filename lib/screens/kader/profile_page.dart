@@ -79,6 +79,9 @@ class _ProfilePageState extends State<ProfilePage> {
     var response = await request.send();
 
     if (response.statusCode == 200) {
+      setState(() {
+        _imageFile = null; // reset biar ambil dari server
+      });
       getProfile();
     }
   }
@@ -86,6 +89,13 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    getProfile();
+  }
+
+  // 🔥 Tambahan supaya refresh saat balik ke halaman ini
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     getProfile();
   }
 
@@ -119,8 +129,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundImage: _imageFile != null
                       ? FileImage(File(_imageFile!.path))
                       : user!['photo_url'] != null
-                      ? NetworkImage(user!['photo_url'])
-                      : null,
+                          // 🔥 CACHE BUSTER DI SINI
+                          ? NetworkImage(
+                              user!['photo_url'] +
+                                  "?t=${DateTime.now().millisecondsSinceEpoch}",
+                            )
+                          : null,
                   child: user!['photo_url'] == null && _imageFile == null
                       ? const Icon(Icons.person, size: 60)
                       : null,

@@ -183,8 +183,8 @@ class _DashboardPetugasState extends State<DashboardPetugas> {
         children: [
           const CircleAvatar(
             radius: 30,
-            backgroundColor: Colors.white,
-            child: Icon(Icons.person, size: 30, color: Colors.deepPurple),
+            backgroundColor: AppColors.button,
+            backgroundImage: AssetImage('assets/images/logo_petugas.png'),
           ),
           const SizedBox(width: 16),
           const Expanded(

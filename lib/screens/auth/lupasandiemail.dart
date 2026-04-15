@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'lupasandiotp.dart';
+import 'package:sijentik/api/api.dart';
 
 class LupaKataSandiEmailPage extends StatefulWidget {
   const LupaKataSandiEmailPage({super.key});
@@ -13,11 +14,6 @@ class LupaKataSandiEmailPage extends StatefulWidget {
 class _LupaKataSandiEmailPageState extends State<LupaKataSandiEmailPage> {
   final TextEditingController emailController = TextEditingController();
   final FocusNode emailFocusNode = FocusNode();
-
-  // Ganti sesuai device yang dipakai
-  // Android Emulator: 10.0.2.2
-  // HP Fisik: pakai IP laptop, misalnya 192.168.1.8
-  static const String requestOtpUrl = 'http://192.168.1.6:8000/api/RequestOtp';
 
   @override
   void dispose() {
@@ -226,11 +222,10 @@ class _LupaKataSandiEmailPageState extends State<LupaKataSandiEmailPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(requestOtpUrl),
+        Uri.parse('$baseUrl/request-otp'), // 🔥 pakai baseUrl global
         headers: {'Accept': 'application/json'},
         body: {'email': emailController.text.trim(), 'type': 'email'},
       );
-
       final dynamic data = jsonDecode(response.body);
 
       if (!mounted) return;

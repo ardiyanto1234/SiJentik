@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:sijentik/api/api.dart';
+import 'package:sijentik/component/app_theme.dart';
 
 class LaporanPetugasPage extends StatefulWidget {
   const LaporanPetugasPage({super.key});
@@ -11,7 +13,6 @@ class LaporanPetugasPage extends StatefulWidget {
 }
 
 class _LaporanPetugasPageState extends State<LaporanPetugasPage> {
-  static const String baseUrl = 'http://192.168.1.6:8000/api';
 
   List<dynamic> laporanList = [];
   bool isLoading = false;
@@ -217,8 +218,14 @@ class _LaporanPetugasPageState extends State<LaporanPetugasPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Laporan Petugas'),
-        backgroundColor: Colors.blue,
+        title: const Text(
+          'Laporan Petugas',
+          style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+          ),
+        backgroundColor: AppColors.button,
       ),
       body: Column(
         children: [

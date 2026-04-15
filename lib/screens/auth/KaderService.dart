@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:sijentik/api/api.dart';
 
 class KaderService {
-
-  final String baseUrl = "http://192.168.1.6:8000/api";
 
   Future<bool> approveKader(int id) async {
     try {
