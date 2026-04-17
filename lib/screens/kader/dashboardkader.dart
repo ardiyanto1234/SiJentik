@@ -55,7 +55,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     final response = await http.get(
-      Uri.parse('http://192.168.1.6:8000/api/dashboard/$userId'),
+      Uri.parse('http://192.168.0.118:8000/api/dashboard/$userId'),
     );
 
     print("STATUS: ${response.statusCode}");

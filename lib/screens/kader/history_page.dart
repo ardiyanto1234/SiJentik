@@ -20,7 +20,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
   bool isLoading = true;
 
-  final String apiUrl = "http://192.168.1.6:8000/api/laporan";
+  final String apiUrl = "http://192.168.0.118:8000/api/laporan";
 
   @override
   void initState() {
