@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:sijentik/component/app_theme.dart';
 import 'package:sijentik/screens/auth/login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,40 +21,47 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool isLoading = true;
 
+  Future<int?> getUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getInt('user_id');
+}
+
   // ==========================
   // GET PROFILE
   // ==========================
-  Future getProfile() async {
-    try {
-      final response = await http.get(
-        Uri.parse("http://192.168.0.118:8000/api/profile?user_id=4"),
-        headers: {"Accept": "application/json"},
-      );
+ Future getProfile() async {
+  try {
+    int? userId = await getUserId();
 
-      print(response.statusCode);
-      print(response.body);
+    print("USER ID: $userId"); // debug
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+    if (userId == null) {
+      setState(() => isLoading = false);
+      return;
+    }
 
-        setState(() {
-          user = data['user'];
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        print("Error API");
-      }
-    } catch (e) {
+    final response = await http.get(
+      Uri.parse("http://192.168.0.118:8000/api/profile?user_id=$userId"),
+      headers: {"Accept": "application/json"},
+    );
+
+    print(response.body);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
       setState(() {
+        user = data['user'];
         isLoading = false;
       });
-      print("Error: $e");
+    } else {
+      setState(() => isLoading = false);
     }
+  } catch (e) {
+    setState(() => isLoading = false);
+    print(e);
   }
-
+}
   // ==========================
   // PICK IMAGE
   // ==========================
@@ -73,57 +81,44 @@ class _ProfilePageState extends State<ProfilePage> {
   // ==========================
   // UPLOAD PHOTO
   // ==========================
-  Future uploadPhoto() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
+ Future uploadPhoto() async {
+  try {
+    int? userId = await getUserId();
 
-      var request = http.MultipartRequest(
-        "POST",
-        Uri.parse("http://192.168.0.118:8000/api/upload-photo"),
-      );
+    var request = http.MultipartRequest(
+      "POST",
+      Uri.parse("http://192.168.0.118:8000/api/upload-photo"),
+    );
 
-      request.headers['Accept'] = 'application/json';
-      request.fields['user_id'] = user?['id'].toString() ?? "0";
+    request.fields['user_id'] = userId.toString();
 
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'profile_photo',
-          _imageFile!.path,
-        ),
-      );
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'profile_photo',
+        _imageFile!.path,
+      ),
+    );
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+    var streamedResponse = await request.send();
+    var response = await http.Response.fromStream(streamedResponse);
 
-      print(response.statusCode);
-      print(response.body);
+    print(response.body);
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _imageFile = null;
-        });
-
-        await getProfile(); // refresh
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        print("Upload gagal");
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      print("Error upload: $e");
+    if (response.statusCode == 200) {
+      await getProfile();
+    } else {
+      print("Upload gagal");
     }
+  } catch (e) {
+    print(e);
   }
+}
 
   @override
   void initState() {
     super.initState();
     getProfile();
+    
   }
 
   @override
